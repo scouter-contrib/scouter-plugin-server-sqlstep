@@ -161,6 +161,7 @@ public class SqlStepPlugin {
 //                                builder.open(open);
                                 JDBCHistory.JDBCHistoryBuilder openStep = JDBCHistory.builder();
                                 openStep.open(open);
+                                openStep.type("open");
                                 sqlSteps.add(openStep.build());
                             }
                             break;
@@ -170,6 +171,7 @@ public class SqlStepPlugin {
                             JDBCHistory.JDBCHistoryBuilder apErrorStep = JDBCHistory.builder();
                             if (StringUtil.isNotEmpty(apError)) {
                                 apErrorStep.apError(apError);
+                                apErrorStep.type("error");
                                 sqlSteps.add(apErrorStep.build());
                             }
 
@@ -184,6 +186,7 @@ public class SqlStepPlugin {
                             sqlStep.sql(helper.getSqlString(sql.hash));
                             sqlStep.sqlError(helper.getErrorString(sql.error));
                             sqlStep.elapsed(sql.elapsed);
+                            sqlStep.type("sql");
                             sqlSteps.add(sqlStep.build());
                             break;
                     }

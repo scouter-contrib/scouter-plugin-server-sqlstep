@@ -11,6 +11,7 @@ import lombok.ToString;
 @ToString
 public class JDBCHistory {
 
+    String type;
     String open;
     String sql;
     String param;
