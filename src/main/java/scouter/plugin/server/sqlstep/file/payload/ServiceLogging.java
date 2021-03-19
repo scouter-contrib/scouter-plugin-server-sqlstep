@@ -16,7 +16,7 @@ public class ServiceLogging {
     String name;
     String url;
     String requestTime;
-    long elapsed;
+//    long elapsed;
     String txid;
     String gxid;
     String error;
