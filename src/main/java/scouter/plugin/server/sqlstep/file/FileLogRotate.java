@@ -95,8 +95,11 @@ public class FileLogRotate {
             String debug = this.obejctMapper.writerWithDefaultPrettyPrinter().writeValueAsString(data);
             log.info("SQL-STEP DEBUG {} ", debug);
         }
-        dataFile.println(this.obejctMapper.writeValueAsString(data));
-        dataFile.flush();
+        //- jdbc history 1이상 존재시에만 로깅 하도록 변경
+        if(data.getHistories().size() > 0) {
+            dataFile.println(this.obejctMapper.writeValueAsString(data));
+            dataFile.flush();
+        }
 
         this.lastTime = System.currentTimeMillis();
     }
