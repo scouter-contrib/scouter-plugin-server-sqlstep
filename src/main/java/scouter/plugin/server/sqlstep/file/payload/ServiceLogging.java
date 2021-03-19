@@ -20,10 +20,10 @@ public class ServiceLogging {
     String txid;
     String gxid;
     String error;
-    long sqlCallCount;
-    long apiCallCount;
-    long apiCallTime;
-    long sqlCallTime;
+//    long sqlCallCount;
+//    long apiCallCount;
+//    long apiCallTime;
+//    long sqlCallTime;
 
     List<JDBCHistory> histories;
     JDBCHistory history;

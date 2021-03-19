@@ -3,7 +3,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>scouter.plugin.server</groupId>
-    <artifactId>scouter-plugin-sqlstep</artifactId>
+    <artifactId>scouter-plugin-server-sqlstep</artifactId>
     <version>1.0.0</version>
     <packaging>jar</packaging>
 
