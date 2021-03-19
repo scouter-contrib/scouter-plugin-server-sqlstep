@@ -10,12 +10,15 @@ import scouter.lang.plugin.PluginConstants;
 import scouter.lang.plugin.annotation.ServerPlugin;
 import scouter.lang.step.*;
 import scouter.lang.value.Value;
+import scouter.plugin.server.sqlstep.file.payload.JDBCHistory;
+import scouter.plugin.server.sqlstep.file.payload.ServiceLogging;
 import scouter.server.ConfObserver;
 import scouter.server.Configure;
 import scouter.server.CounterManager;
 import scouter.server.Logger;
 import scouter.server.core.AgentManager;
 import scouter.server.db.TextRD;
+import scouter.server.db.XLogProfileRD;
 import scouter.server.db.XLogRD;
 import scouter.server.plugin.PluginHelper;
 import scouter.util.DateUtil;
@@ -23,6 +26,7 @@ import scouter.util.HashUtil;
 import scouter.util.Hexa32;
 import scouter.util.StringUtil;
 
+import java.io.IOException;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
@@ -43,6 +47,7 @@ public class SqlStepPlugin {
     private static final String ext_plugin_sqlstep_root_dir         = "ext_plugin_sqlstep_root_dir";
     private static final String ext_plugin_sqlstep_rotate_dir       = "ext_plugin_sqlstep_rotate_dir";
     private static final String ext_plugin_sqlstep_extension        = "ext_plugin_sqlstep_extension";
+    private static final String ext_plugin_sqlstep_debug_enabled        = "ext_plugin_sqlstep_debug_enabled";
 
 
     private final FileScheduler sqlStepFileScheduler;
@@ -50,9 +55,7 @@ public class SqlStepPlugin {
     final Map<String,FileLogRotate> couterMagement;
     final PluginHelper helper;
     boolean enabled;                                              
-    String couterIndexName;
     String name;
-    int counterDuration;
     int stepDuration;
     FileLogRotate xlogLogger;
     String rootDir;
@@ -60,7 +63,7 @@ public class SqlStepPlugin {
     String extension;
     
     final DateTimeFormatter dateTimeFormatter;
-
+    private final boolean _isDebug;
 
 
     public SqlStepPlugin() {
@@ -73,6 +76,7 @@ public class SqlStepPlugin {
         this.rootDir            = conf.getValue(ext_plugin_sqlstep_root_dir, "./ext_plugin_sqlstep");
         this.moveDir            = conf.getValue(ext_plugin_sqlstep_rotate_dir, "./ext_plugin_sqlstep/rotate");
         this.extension          = conf.getValue(ext_plugin_sqlstep_extension, "json");
+        this._isDebug           = conf.getBoolean(ext_plugin_sqlstep_debug_enabled, false);
 
         this.couterMagement     = new ConcurrentHashMap<>();
         this.xlogLogger         = new FileLogRotate(this.name,this.extension,this.rootDir,this.moveDir);
@@ -91,7 +95,7 @@ public class SqlStepPlugin {
                 ,"filerotate-scheduler-sqlstep"
                 ,schStartTime
                 , stepDuration
-                ,dateTimeFormatter
+                , dateTimeFormatter
         );
         this.sqlStepFileScheduler.start();
 
@@ -99,171 +103,98 @@ public class SqlStepPlugin {
             enabled            = conf.getBoolean(ext_plugin_sqlstep_enabled, true);
             stepDuration = conf.getInt(ext_plugin_sqlstep_duration_day, 3);
             sqlStepFileScheduler.setDuration(stepDuration);
-            Logger.println("ServerPluginFileLogPlugin Enabled Result : " + enabled);
+            Logger.println("reload sqlstep enabled result : " + enabled);
         });
-        log.info("PLUG-IN: starting sqlStep Plugin...");
+        log.info("PLUG-IN: SQLStep starting ...");
     }
 
-
-    @ServerPlugin(PluginConstants.PLUGIN_SERVER_COUNTER)
-    public void counter(final PerfCounterPack pack) {
-
+    private void save(final XLogPack p,final List<JDBCHistory> h) {
         if (!enabled) {
             return;
         }
 
-        if(pack.timetype != TimeTypeEnum.REALTIME) {
+        ObjectPack op= AgentManager.getAgent(p.objHash);
+        if(Objects.isNull(op)){
+                return;
+        }
+
+        try {
+            xlogLogger.execute(ServiceLogging.builder()
+                    .name(op.objName)
+                    .requestTime(this.dateTimeFormatter.format(new Date(p.endTime - p.elapsed).toInstant()))
+                    .elapsed(p.elapsed)
+                    .txid(Hexa32.toString32(p.txid))
+                    .gxid(Hexa32.toString32(p.gxid))
+                    .sqlCallCount(p.sqlCount)
+                    .apiCallCount(p.apicallCount)
+                    .sqlCallTime(p.sqlTime)
+                    .apiCallTime(p.apicallTime)
+                    .histories(h)
+                    .build(),this._isDebug);
+        }catch (IOException e){
+                log.error("{}",e);
+        }
+    }
+
+    private String getString(String value){
+        return StringUtil.nullToEmpty(value);
+    }
+
+    @ServerPlugin(PluginConstants.PLUGIN_SERVER_XLOG)
+    public void xlog(final XLogPack p) {
+        byte[] profile = XLogProfileRD.getProfile(DateUtil.yyyymmdd(), p.txid, 10000);
+        if(Objects.isNull(profile)){
+            log.warn(" profile  is not search {}", p.txid);
             return;
         }
         try {
-            String objName = pack.objName;
-            int objHash    = HashUtil.hash(objName);
-            ObjectPack op  = AgentManager.getAgent(objHash);
-            if(Objects.isNull(op)){
-                return;
-            }
-            ObjectType objectType = CounterManager.getInstance().getCounterEngine().getObjectType(op.objType);
-            String objFamily = objectType.getFamily().getName();
 
-            Map<String, Value> dataMap = pack.data.toMap();
-            Map<String,Object> _source = new LinkedHashMap<>();
-            _source.put("server_id",this.conf.server_id);
-            _source.put("startTime", this.dateTimeFormatter.format(new Date(pack.time).toInstant()));
-            _source.put("objName",op.objName);
-            _source.put("objHash",Hexa32.toString32(objHash));
-            _source.put("objType",op.objType);
-            _source.put("objFamily",objFamily);
-
-            for (Map.Entry<String, Value> field : dataMap.entrySet()) {
-                Value valueOrigin = field.getValue();
-                if (Objects.isNull(valueOrigin)) {
-                    continue;
-                }
-                Object value = valueOrigin.toJavaObject();
-                if(!(value instanceof Number)) {
-                    continue;
-                }
-                String key = field.getKey();
-                if(Objects.equals("time",key) || Objects.equals("objHash",key)) {
-                    continue;
-                }
-                _source.put(key,value);
-            }
-
-            this.getCounterLogger(objFamily).execute(_source);
-        } catch (Exception e) {
-            Logger.printStackTrace("counter logging failed", e);
-        }
-    }
-    private FileLogRotate getCounterLogger(String objFamily) {
-        return Optional.ofNullable(this.couterMagement.get(objFamily))
-                       .orElseGet(()->{
-                           FileLogRotate fileLogRotate=  new FileLogRotate(
-                                                            String.join("-",this.couterIndexName,objFamily)
-                                                            , this.extension
-                                                            , this.rootDir
-                                                            , this.moveDir);
-                           if(fileLogRotate.create()){
-                             this.couterMagement.put(objFamily,fileLogRotate);
-                           }
-                           return fileLogRotate;
-                       });
-
-    }
-
-    @ServerPlugin(PluginConstants.PLUGIN_SERVER_PROFILE)
-    public void profile(final XLogProfilePack m) {
-        try {
-            byte[] stepHash = m.profile;
-
-            Step[] steps = Step.toObjects(stepHash);
+            Step[] steps = Step.toObjects(profile);
             if (Objects.nonNull(steps)) {
+                List<JDBCHistory> sqlSteps = new ArrayList<>();
                 for (Step step : steps) {
                     StepEnum.Type stepType = StepEnum.Type.of(step.getStepType());
                     switch (stepType) {
                         case METHOD:
                             MethodStep methodStep = (MethodStep) step;
-                            String open= helper.getMethodString(methodStep.hash);
-                            if(open.indexOf("OPEN-DBC") > -1) {
-                                log.info("{}", open);
+                            String open = helper.getMethodString(methodStep.hash);
+                            if (open.indexOf("OPEN-DBC") > -1) {
+//                                builder.open(open);
+                                JDBCHistory.JDBCHistoryBuilder openStep = JDBCHistory.builder();
+                                openStep.open(open);
+                                sqlSteps.add(openStep.build());
                             }
                             break;
                         case METHOD2:
                             MethodStep2 methodStep2 = (MethodStep2) step;
-                            log.info("{}", helper.getErrorString(methodStep2.error));
+                            String apError = helper.getErrorString(methodStep2.error);
+                            JDBCHistory.JDBCHistoryBuilder apErrorStep = JDBCHistory.builder();
+                            if (StringUtil.isNotEmpty(apError)) {
+                                apErrorStep.apError(apError);
+                                sqlSteps.add(apErrorStep.build());
+                            }
+
                             break;
                         case SQL:
                         case SQL2:
                         case SQL3:
-
+                            JDBCHistory.JDBCHistoryBuilder sqlStep = JDBCHistory.builder();
                             SqlStep sql = (SqlStep) step;
-                            log.info("{} {} {} {}",
-                                    helper.getSqlString(sql.hash),
-                                    sql.param,
-                                    helper.getErrorString(sql.error),
-                                    TextRD.getString(DateUtil.yyyymmdd(), TextTypes.SQL_TABLES, sql.hash));
+                            sqlStep.param(sql.param);
+                            sqlStep.tables(TextRD.getString(DateUtil.yyyymmdd(), TextTypes.SQL_TABLES, sql.hash));
+                            sqlStep.sql(helper.getSqlString(sql.hash));
+                            sqlStep.sqlError(helper.getErrorString(sql.error));
+                            sqlStep.elapsed(sql.elapsed);
+                            sqlSteps.add(sqlStep.build());
                             break;
-                        case SQL_SUM:
-                            SqlSum sqlSum = (SqlSum)step;
-                            log.info("{}",helper.getSqlString(sqlSum.hash));
-                            break;
-
                     }
                 }
+                //-call
+                this.save(p,sqlSteps);
             }
-            byte[] read = XLogRD.getByTxid(DateUtil.yyyymmdd(), m.txid);
-            if (Objects.nonNull(read)) {
-                Pack pack = new DataInputX(read).readPack();
-                XLogPack xlog = (XLogPack) pack;
-                this.xlog(xlog);
-            }
-
-        } catch (Throwable e) {
-            log.error("profile parsing error", e);
+        }catch (Throwable e){
+            log.error("read profile db failed {}",e);
         }
-
-    }
-    public void xlog(final XLogPack p) {
-        if (!enabled) {
-            return;
-        }
-//        try {
-            Map<String,Object> _source = new LinkedHashMap<>();
-            ObjectPack op= AgentManager.getAgent(p.objHash);
-
-            if(Objects.isNull(op)){
-                return;
-            }
-            _source.put("server_id",this.conf.server_id);
-            _source.put("objName",op.objName);
-            _source.put("objHash",Hexa32.toString32(p.objHash));
-            _source.put("objType","java");
-            _source.put("objFamily","sqlstep");
-
-            _source.put("startTime",this.dateTimeFormatter.format(new Date(p.endTime - p.elapsed).toInstant()));
-            _source.put("endTime",this.dateTimeFormatter.format(new Date(p.endTime).toInstant()));
-
-            _source.put("serviceName",this.getString(helper.getServiceString(p.service)));
-            _source.put("threadName",this.getString(helper.getHashMsgString(p.threadNameHash)));
-
-            _source.put("txId",Hexa32.toString32(p.txid));
-
-
-            _source.put("elapsed",p.elapsed);
-            _source.put("error",this.getString(helper.getErrorString(p.error)));
-            _source.put("sqlCount",p.sqlCount);
-            _source.put("sqlTime",p.sqlTime);
-
-            _source.put("userAgent",this.getString(helper.getUserAgentString(p.userAgent)));
-            _source.put("referrer",this.getString(helper.getRefererString(p.referer)));
-
-            _source.put("apiCallCount",p.apicallCount);
-            _source.put("apiCallTime",p.apicallTime);
-            log.info("{}",_source);
-
-    }
-    private String getString(String value){
-        return StringUtil.nullToEmpty(value);
     }
 
 }

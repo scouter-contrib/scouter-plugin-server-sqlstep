@@ -3,16 +3,21 @@ package scouter.plugin.server.sqlstep.file;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.Getter;
+import lombok.Setter;
+import lombok.extern.slf4j.Slf4j;
+import scouter.plugin.server.sqlstep.file.payload.ServiceLogging;
 import scouter.server.Logger;
-import scouter.util.StringUtil;
 
-import java.io.*;
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.io.PrintWriter;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.stream.Collectors;
 
-
+@Slf4j
 @Getter
 public class FileLogRotate {
 
@@ -78,7 +83,7 @@ public class FileLogRotate {
             }
         }
     }
-    public void execute(Map<String,Object> data)  throws IOException{
+    public void execute(ServiceLogging data,boolean isDebug)  throws IOException{
         final String now  = dateformatter.format(new Date().toInstant());
         final String last = dateformatter.format(new Date(this.lastTime).toInstant());
 
@@ -86,40 +91,13 @@ public class FileLogRotate {
             this.rotate();
         }
 
-        if(!isJson) {
-            this.head(data.keySet());
-            dataFile.println(new ArrayList<>(data.values()).stream().map(Object::toString).collect(Collectors.joining(",")));
-            dataFile.flush();
-        }else{
-            Map<String,Object> rebuild = new LinkedHashMap<>();
-
-            String name = data.remove("objName").toString();
-            String[] objName = StringUtil.split(name,"/");
-
-            rebuild.put("server_id",data.remove("server_id"));
-            rebuild.put("startTime",data.get("startTime"));
-            rebuild.put("objName",name);
-            rebuild.put("objHash",data.remove("objHash"));
-            rebuild.put("objType",data.remove("objType"));
-            rebuild.put("objHost",objName[0]);
-            if(objName.length > 1){
-                rebuild.put("objId",objName[1]);
-            }else{
-                rebuild.put("objId",objName[0]);
-            }
-            // merge
-            String objFamily= data.remove("objFamily").toString();
-            rebuild.put("objFamily",objFamily);
-
-            Map<String,Object> reData = new LinkedHashMap<>();
-            for(Map.Entry<String,Object> get: data.entrySet()){
-                reData.put(get.getKey(),get.getValue());
-            }
-
-            rebuild.put(objFamily ,reData);
-            dataFile.println(this.obejctMapper.writeValueAsString(rebuild));
-            dataFile.flush();
+        if(isDebug) {
+            String debug = this.obejctMapper.writerWithDefaultPrettyPrinter().writeValueAsString(data);
+            log.info("SQL-STEP DEBUG {} ", debug);
         }
+        dataFile.println(this.obejctMapper.writeValueAsString(data));
+        dataFile.flush();
+
         this.lastTime = System.currentTimeMillis();
     }
 
