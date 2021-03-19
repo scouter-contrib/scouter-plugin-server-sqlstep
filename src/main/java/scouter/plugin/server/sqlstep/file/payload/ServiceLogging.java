@@ -26,4 +26,5 @@ public class ServiceLogging {
     long sqlCallTime;
 
     List<JDBCHistory> histories;
+    JDBCHistory history;
 }

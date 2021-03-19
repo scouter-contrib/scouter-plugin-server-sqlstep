@@ -119,19 +119,21 @@ public class SqlStepPlugin {
         }
 
         try {
-            xlogLogger.execute(ServiceLogging.builder()
-                    .name(op.objName)
-                    .url(this.getString(helper.getServiceString(p.service)))
-                    .requestTime(this.dateTimeFormatter.format(new Date(p.endTime - p.elapsed).toInstant()))
-                    .elapsed(p.elapsed)
-                    .txid(Hexa32.toString32(p.txid))
-                    .gxid(Hexa32.toString32(p.gxid))
-                    .sqlCallCount(p.sqlCount)
-                    .apiCallCount(p.apicallCount)
-                    .sqlCallTime(p.sqlTime)
-                    .apiCallTime(p.apicallTime)
-                    .histories(h)
-                    .build(),this._isDebug);
+            for(JDBCHistory jh : h ) {
+                xlogLogger.execute(ServiceLogging.builder()
+                        .name(op.objName)
+                        .url(this.getString(helper.getServiceString(p.service)))
+                        .requestTime(this.dateTimeFormatter.format(new Date(p.endTime - p.elapsed).toInstant()))
+                        .elapsed(p.elapsed)
+                        .txid(Hexa32.toString32(p.txid))
+                        .gxid(Hexa32.toString32(p.gxid))
+                        .sqlCallCount(p.sqlCount)
+                        .apiCallCount(p.apicallCount)
+                        .sqlCallTime(p.sqlTime)
+                        .apiCallTime(p.apicallTime)
+                        .history(jh)
+                        .build(), this._isDebug);
+            }
         }catch (IOException e){
                 log.error("{}",e);
         }
