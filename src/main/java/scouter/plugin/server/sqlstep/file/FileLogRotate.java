@@ -101,6 +101,7 @@ public class FileLogRotate {
         }else{
             String print = data.toCSVString();
             if(Objects.nonNull(print)){
+                this.head(data.toCSVHead());
                 dataFile.println(print);
             }
         }

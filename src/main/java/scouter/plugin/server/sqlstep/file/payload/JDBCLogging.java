@@ -8,6 +8,7 @@ import lombok.Getter;
 import lombok.Setter;
 
 import java.io.IOException;
+import java.util.Set;
 
 @Builder
 @Setter
@@ -33,6 +34,11 @@ public class JDBCLogging implements ILogging {
     @JsonIgnore
     @Override
     public String toCSVString() {
+        return null;
+    }
+
+    @Override
+    public Set<String> toCSVHead() {
         return null;
     }
 }

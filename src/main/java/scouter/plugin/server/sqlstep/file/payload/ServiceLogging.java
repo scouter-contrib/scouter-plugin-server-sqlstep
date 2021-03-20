@@ -9,6 +9,7 @@ import lombok.Setter;
 import scouter.util.StringUtil;
 
 import java.io.IOException;
+import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -66,6 +67,7 @@ public class ServiceLogging implements ILogging {
                 this.quite("-"),
                 this.quite("-"),
                 this.quite("-"),
+                this.quite("-"),
                 this.quite("-"))
                 .collect(Collectors.joining(","));
 
@@ -94,6 +96,31 @@ public class ServiceLogging implements ILogging {
         }
         return csv.toString();
 
+
+    }
+
+    @Override
+    public Set<String> toCSVHead() {
+        return Stream.of(this.quite("name"),
+                this.quite("url"),
+                this.quite("requestTime"),
+                this.quite("elapsed"),
+                this.quite("txid"),
+                this.quite("gxid"),
+                this.quite("error"),
+                this.quite("sqlCallCount"),
+                this.quite("apiCallCount"),
+                this.quite("sqlCallTime"),
+                this.quite("apiCallTime"),
+                this.quite("stepType"),
+                this.quite("stepOpen"),
+                this.quite("stepSql"),
+                this.quite("stepParam"),
+                this.quite("stepTables"),
+                this.quite("stepSqlError"),
+                this.quite("stepApError")
+        )
+        .collect(Collectors.toSet());
 
     }
 }
