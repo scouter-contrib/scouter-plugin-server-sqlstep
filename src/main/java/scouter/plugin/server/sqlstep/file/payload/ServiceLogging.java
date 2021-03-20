@@ -39,7 +39,7 @@ public class ServiceLogging implements ILogging {
     }
 
     private String quite(String v){
-        return ""+v+"";
+        return "\""+v+"\"";
     }
 
     @JsonIgnore
