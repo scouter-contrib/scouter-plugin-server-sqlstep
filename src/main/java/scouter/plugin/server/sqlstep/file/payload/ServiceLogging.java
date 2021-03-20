@@ -9,6 +9,7 @@ import lombok.Setter;
 import scouter.util.StringUtil;
 
 import java.io.IOException;
+import java.util.LinkedHashSet;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -120,7 +121,7 @@ public class ServiceLogging implements ILogging {
                 this.quite("stepSqlError"),
                 this.quite("stepApError")
         )
-        .collect(Collectors.toSet());
+        .collect(Collectors.toCollection( LinkedHashSet::new ));
 
     }
 }
