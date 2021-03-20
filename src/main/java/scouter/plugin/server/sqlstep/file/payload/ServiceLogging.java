@@ -57,8 +57,17 @@ public class ServiceLogging implements ILogging {
                                 this.quite(String.valueOf(sqlCallTime)),
                                 this.quite(String.valueOf(apiCallTime)))
                     .collect(Collectors.joining(","));
-        String head = Stream.of("-","-","-","-","-","-","-","-","-","-")
-                            .collect(Collectors.joining(","));
+        String head = Stream.of(this.quite("-"),
+                this.quite("-"),
+                this.quite("-"),
+                this.quite("-"),
+                this.quite("-"),
+                this.quite("-"),
+                this.quite("-"),
+                this.quite("-"),
+                this.quite("-"),
+                this.quite("-"))
+                .collect(Collectors.joining(","));
 
         int index = 0;
 
@@ -70,7 +79,7 @@ public class ServiceLogging implements ILogging {
                     this.quite(step.param),
                     this.quite(step.tables),
                     this.quite(StringUtil.emptyToDefault(step.sqlError,"-")),
-                    this.quite(StringUtil.emptyToDefault(step.apError,"")),
+                    this.quite(StringUtil.emptyToDefault(step.apError,"-")),
                     this.quite(String.valueOf(elapsed)))
                     .collect(Collectors.joining(","));
             if(index == 0 ){
