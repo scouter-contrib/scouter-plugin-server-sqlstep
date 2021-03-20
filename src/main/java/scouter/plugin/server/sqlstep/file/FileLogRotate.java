@@ -3,9 +3,8 @@ package scouter.plugin.server.sqlstep.file;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.Getter;
-import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
-import scouter.plugin.server.sqlstep.file.payload.ServiceLogging;
+import scouter.plugin.server.sqlstep.file.payload.ILogging;
 import scouter.server.Logger;
 
 import java.io.File;
@@ -83,24 +82,33 @@ public class FileLogRotate {
             }
         }
     }
-    public void execute(ServiceLogging data,boolean isDebug)  throws IOException{
+    public void execute(ILogging data, boolean isDebug)  throws IOException{
         final String now  = dateformatter.format(new Date().toInstant());
         final String last = dateformatter.format(new Date(this.lastTime).toInstant());
-
+//
         if(!Objects.equals(now,last)){
             this.rotate();
         }
-
+//
         if(isDebug) {
             String debug = this.obejctMapper.writerWithDefaultPrettyPrinter().writeValueAsString(data);
             log.info("SQL-STEP DEBUG {} ", debug);
         }
         //- jdbc history 1이상 존재시에만 로깅 하도록 변경
-            dataFile.println(this.obejctMapper.writeValueAsString(data));
+        if(isJson) {
+            dataFile.println(data.toJSONString(this.obejctMapper));
             dataFile.flush();
-
+        }else{
+            String print = data.toCSVString();
+            if(Objects.nonNull(print)){
+                dataFile.println(print);
+            }
+        }
         this.lastTime = System.currentTimeMillis();
     }
+
+
+
 
     private void head(Set<String> strings) {
         if( new File(this.fileName).length() == 0 ) {
