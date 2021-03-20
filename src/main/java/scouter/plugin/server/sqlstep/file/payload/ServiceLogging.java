@@ -38,13 +38,24 @@ public class ServiceLogging implements ILogging {
         return objectMapper.writeValueAsString(this);
     }
 
+    private String quite(String v){
+        return ""+v+"";
+    }
+
     @JsonIgnore
     @Override
     public String toCSVString() {
-
-
-        String first= Stream.of(name,url,requestTime,elapsed,txid,gxid,error,sqlCallCount,apiCallCount,sqlCallTime)
-                    .map(String::valueOf)
+        String first= Stream.of(this.quite(name),
+                                this.quite(url),
+                                this.quite(requestTime),
+                                this.quite(String.valueOf(elapsed)),
+                                this.quite(txid),
+                                this.quite(gxid),
+                                this.quite(error),
+                                this.quite(String.valueOf(sqlCallCount)),
+                                this.quite(String.valueOf(apiCallCount)),
+                                this.quite(String.valueOf(sqlCallTime)),
+                                this.quite(String.valueOf(apiCallTime)))
                     .collect(Collectors.joining(","));
         String head = Stream.of("-","-","-","-","-","-","-","-","-","-")
                             .collect(Collectors.joining(","));
@@ -53,14 +64,15 @@ public class ServiceLogging implements ILogging {
 
         StringBuffer csv = new StringBuffer();
         for(SQLStep step : history.steps ){
-            String values = Stream.of(step.type,
-                      step.open,
-                      step.sql,
-                      step.param,
-                      step.tables,
-                      StringUtil.emptyToDefault(step.sqlError,"-"),
-                      StringUtil.emptyToDefault(step.apError,""),
-                      String.valueOf(elapsed)).collect(Collectors.joining(","));
+            String values = Stream.of(this.quite(step.type),
+                    this.quite(step.open),
+                    this.quite(step.sql),
+                    this.quite(step.param),
+                    this.quite(step.tables),
+                    this.quite(StringUtil.emptyToDefault(step.sqlError,"-")),
+                    this.quite(StringUtil.emptyToDefault(step.apError,"")),
+                    this.quite(String.valueOf(elapsed)))
+                    .collect(Collectors.joining(","));
             if(index == 0 ){
                 csv.append(String.join(",",first,values))
                    .append("\r\n");
