@@ -77,12 +77,12 @@ public class ServiceLogging implements ILogging {
         StringBuffer csv = new StringBuffer();
         for(SQLStep step : history.steps ){
             String values = Stream.of(this.quite(step.type),
-                    this.quite(StringUtil.emptyToDefault(step.open,"-")),
-                    this.quite(StringUtil.emptyToDefault(step.sql,"-")),
-                    this.quite(StringUtil.emptyToDefault(step.param,"-")),
-                    this.quite(StringUtil.emptyToDefault(step.tables,"-")),
-                    this.quite(StringUtil.emptyToDefault(step.sqlError,"-")),
-                    this.quite(StringUtil.emptyToDefault(step.apError,"-")),
+                    this.quite(StringUtil.emptyToDefault(step.open,"")),
+                    this.quite(StringUtil.emptyToDefault(step.sql,"")),
+                    this.quite(StringUtil.emptyToDefault(step.param,"")),
+                    this.quite(StringUtil.emptyToDefault(step.tables,"")),
+                    this.quite(StringUtil.emptyToDefault(step.sqlError,"")),
+                    this.quite(StringUtil.emptyToDefault(step.apError,"")),
                     this.quite(String.valueOf(elapsed)))
                     .collect(Collectors.joining(","));
             if(index == 0 ){
