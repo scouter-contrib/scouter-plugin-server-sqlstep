@@ -125,7 +125,7 @@ public class SqlStepPlugin {
                         .name(op.objName)
                         .url(this.getString(helper.getServiceString(p.service)))
                         .requestTime(this.dateTimeFormatter.format(new Date(p.endTime - p.elapsed).toInstant()))
-                        .error(helper.getErrorString(p.error))
+                        .error(StringUtil.emptyToDefault(jh.sqlError,""))
                         .txid(Hexa32.toString32(p.txid))
                         .gxid(p.gxid != 0 ? Hexa32.toString32(p.gxid) : null)
                         .history(jh)
