@@ -6,6 +6,7 @@ import scouter.lang.pack.*;
 import scouter.lang.plugin.PluginConstants;
 import scouter.lang.plugin.annotation.ServerPlugin;
 import scouter.lang.step.*;
+import scouter.plugin.server.sqlstep.file.alert.SlackPlugin;
 import scouter.plugin.server.sqlstep.file.payload.SQLStep;
 import scouter.plugin.server.sqlstep.file.payload.JDBCLogging;
 import scouter.plugin.server.sqlstep.file.payload.SQLStepWrapper;
@@ -42,7 +43,8 @@ public class SqlStepPlugin {
     private static final String ext_plugin_sqlstep_root_dir         = "ext_plugin_sqlstep_root_dir";
     private static final String ext_plugin_sqlstep_rotate_dir       = "ext_plugin_sqlstep_rotate_dir";
     private static final String ext_plugin_sqlstep_extension        = "ext_plugin_sqlstep_extension";
-    private static final String ext_plugin_sqlstep_debug_enabled        = "ext_plugin_sqlstep_debug_enabled";
+    private static final String ext_plugin_sqlstep_debug_enabled    = "ext_plugin_sqlstep_debug_enabled";
+
 
 
     private final FileScheduler sqlStepFileScheduler;
@@ -61,6 +63,7 @@ public class SqlStepPlugin {
     
     final DateTimeFormatter dateTimeFormatter;
     private final boolean _isDebug;
+    private SlackPlugin slackPlugin;
 
 
     public SqlStepPlugin() {
@@ -81,6 +84,8 @@ public class SqlStepPlugin {
 
         this.xlogLoggerCSV         = new FileLogRotate(this.name,"csv",this.rootDir,this.moveDir);
         this.xlogLoggerCSV.create();
+
+        this.slackPlugin = new SlackPlugin();
 
 
 
@@ -149,6 +154,7 @@ public class SqlStepPlugin {
 
             xlogLoggerJSON.execute(serviceLogging,this._isDebug);
             xlogLoggerCSV.execute(serviceLogging,this._isDebug);
+            slackPlugin.execute(serviceLogging,this._isDebug);
         }catch (IOException e){
                 log.error("{}",e);
         }
