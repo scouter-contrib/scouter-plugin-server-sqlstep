@@ -154,7 +154,7 @@ public class SqlStepPlugin {
 
             xlogLoggerJSON.execute(serviceLogging,this._isDebug);
             xlogLoggerCSV.execute(serviceLogging,this._isDebug);
-            slackPlugin.execute(serviceLogging,this._isDebug);
+            slackPlugin.execute(serviceLogging);
         }catch (IOException e){
                 log.error("{}",e);
         }
