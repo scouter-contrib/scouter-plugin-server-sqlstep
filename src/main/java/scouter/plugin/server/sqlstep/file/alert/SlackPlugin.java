@@ -14,9 +14,11 @@ import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.util.EntityUtils;
 import scouter.plugin.server.sqlstep.file.payload.ServiceLogging;
 import scouter.server.Configure;
+import scouter.util.DateUtil;
 import scouter.util.StringUtil;
 
 import java.io.IOException;
+import java.util.Objects;
 
 @Slf4j
 public class SlackPlugin {
@@ -24,6 +26,7 @@ public class SlackPlugin {
     private final ObjectMapper objectMapper;
     private final String botName;
     private final String channel;
+    private final String[] exclude;
     Configure conf = Configure.getInstance();
     private final String webhook;
     private final boolean enabled;
@@ -31,6 +34,7 @@ public class SlackPlugin {
     private static final String ext_plugin_sqlstep_slack_webhook = "ext_plugin_sqlstep_slack_webhook";
     private static final String ext_plugin_sqlstep_slack_botname = "ext_plugin_sqlstep_slack_botname";
     private static final String ext_plugin_sqlstep_slack_channel = "ext_plugin_sqlstep_slack_channel";
+    private static final String ext_plugin_sqlstep_slack_agent_exclude_pattern = "ext_plugin_sqlstep_slack_agent_exclude_pattern";
 
 
     public SlackPlugin(){
@@ -38,6 +42,7 @@ public class SlackPlugin {
         this.webhook = conf.getValue(ext_plugin_sqlstep_slack_webhook, "");
         this.botName = conf.getValue(ext_plugin_sqlstep_slack_botname, "scouter-sqlstep-alert");
         this.channel = conf.getValue(ext_plugin_sqlstep_slack_channel, "");
+        this.exclude = StringUtil.split(conf.getValue(ext_plugin_sqlstep_slack_agent_exclude_pattern, ""),",");
         this.objectMapper = new ObjectMapper();
         this.objectMapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
     }
@@ -47,11 +52,21 @@ public class SlackPlugin {
             return;
         }
 
-        final String alert= String.join("\n",serviceLogging.getName(),
-                                       "-"+serviceLogging.getUrl(),
-                                      "-" +serviceLogging.getError());
+        for(String name  : exclude){
+            if(serviceLogging.getName().indexOf(name) > -1){
+                return;
+            }
+        }
+
+        final String alert= String.join("\n",
+
+                        "Trigger Time: "+DateUtil.datetime(System.currentTimeMillis()),
+                                       "- "+serviceLogging.getName(),
+                                       "- "+serviceLogging.getUrl(),
+                                       "- " +serviceLogging.getError());
 
         try {
+
             final String payload = objectMapper.writeValueAsString(SlackWebHook.builder()
                     .botName(botName)
                     .text(alert)
