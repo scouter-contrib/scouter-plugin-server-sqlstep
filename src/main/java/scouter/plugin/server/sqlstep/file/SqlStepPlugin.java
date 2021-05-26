@@ -130,7 +130,7 @@ public class SqlStepPlugin {
                 try {
                     jh.sql = SqlMakerUtil.replaceSQLParameter(jh.sql, jh.param);
                 }catch (Throwable e){
-                    log.error("replace sql parameter error {} ",e.getMessage());
+                    //log.error("replace sql parameter error {} ",e.getMessage());
                 }
                 xlogLoggerJSON.execute(JDBCLogging.builder()
                         .name(op.objName)
