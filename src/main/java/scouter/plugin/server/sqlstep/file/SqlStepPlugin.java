@@ -11,6 +11,7 @@ import scouter.plugin.server.sqlstep.file.payload.SQLStep;
 import scouter.plugin.server.sqlstep.file.payload.JDBCLogging;
 import scouter.plugin.server.sqlstep.file.payload.SQLStepWrapper;
 import scouter.plugin.server.sqlstep.file.payload.ServiceLogging;
+import scouter.plugin.server.sqlstep.file.util.SqlMakerUtil;
 import scouter.server.ConfObserver;
 import scouter.server.Configure;
 import scouter.server.Logger;
@@ -126,6 +127,8 @@ public class SqlStepPlugin {
 
         try {
             for(SQLStep jh : h ) {
+
+                jh.sql = SqlMakerUtil.replaceSQLParameter(jh.sql, jh.param);
                 xlogLoggerJSON.execute(JDBCLogging.builder()
                         .name(op.objName)
                         .url(this.getString(helper.getServiceString(p.service)))
@@ -182,6 +185,7 @@ public class SqlStepPlugin {
                         case METHOD:
                             MethodStep methodStep = (MethodStep) step;
                             String open = helper.getMethodString(methodStep.hash);
+
                             if (open.indexOf("OPEN-DBC") > -1) {
 //                                builder.open(open);
                                 SQLStep.SQLStepBuilder openStep = SQLStep.builder();
@@ -194,6 +198,7 @@ public class SqlStepPlugin {
                             MethodStep2 methodStep2 = (MethodStep2) step;
                             String apError = helper.getErrorString(methodStep2.error);
                             SQLStep.SQLStepBuilder apErrorStep = SQLStep.builder();
+
                             if (StringUtil.isNotEmpty(apError)) {
                                 apErrorStep.apError(apError);
                                 apErrorStep.type("error");
