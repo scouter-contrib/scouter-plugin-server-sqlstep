@@ -129,6 +129,7 @@ public class SqlStepPlugin {
             for(SQLStep jh : h ) {
 
                 jh.sql = SqlMakerUtil.replaceSQLParameter(jh.sql, jh.param);
+
                 xlogLoggerJSON.execute(JDBCLogging.builder()
                         .name(op.objName)
                         .url(this.getString(helper.getServiceString(p.service)))
@@ -138,6 +139,7 @@ public class SqlStepPlugin {
                         .gxid(p.gxid != 0 ? Hexa32.toString32(p.gxid) : null)
                         .history(jh)
                         .build(), this._isDebug);
+
             }
 
             ServiceLogging serviceLogging = ServiceLogging.builder()
