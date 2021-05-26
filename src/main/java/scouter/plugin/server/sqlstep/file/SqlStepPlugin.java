@@ -127,9 +127,11 @@ public class SqlStepPlugin {
 
         try {
             for(SQLStep jh : h ) {
-
-                jh.sql = SqlMakerUtil.replaceSQLParameter(jh.sql, jh.param);
-
+                try {
+                    jh.sql = SqlMakerUtil.replaceSQLParameter(jh.sql, jh.param);
+                }catch (Throwable e){
+                    log.error("replace sql parameter error {} ",e.getMessage());
+                }
                 xlogLoggerJSON.execute(JDBCLogging.builder()
                         .name(op.objName)
                         .url(this.getString(helper.getServiceString(p.service)))

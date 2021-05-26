@@ -229,7 +229,7 @@ public class SqlMakerUtil {
 		}
 	}
 	
-	public static String replaceSQLParameter(String sql, String params) {
+	public static String replaceSQLParameter(String sql, String params)  {
 		UnescapedSQL unescapedSql = unescapeLiteralSQL(sql, params);
 		sql = unescapedSql.sql;
 		params = unescapedSql.param;
@@ -243,20 +243,16 @@ public class SqlMakerUtil {
 		int search;
 		int index = 0;
 		int pos = 0;
-		
-		try {
-			while(pos < sqlLength){
-				search = sql.indexOf('?', pos);
-				if(search < 0 ){
-					sqlBuilder.append(sql.substring(pos));
-					break;
-				}
-				sqlBuilder.append(sql.substring(pos, search)).append(paramList.get(index));
-				index++;
-				pos = search + 1;
+
+		while(pos < sqlLength){
+			search = sql.indexOf('?', pos);
+			if(search < 0 ){
+				sqlBuilder.append(sql.substring(pos));
+				break;
 			}
-		} catch (Exception e) {
-			return ">>>> Failed bind parameter : " + e.getMessage();
+			sqlBuilder.append(sql.substring(pos, search)).append(paramList.get(index));
+			index++;
+			pos = search + 1;
 		}
 		return sqlBuilder.toString();
 	}
