@@ -1,9 +1,9 @@
-# scouter-plugin-server-metriclog
+# scouter-plugin-server-sqlstep
 
                                               
 ![Korean](https://img.shields.io/badge/language-Korean-blue.svg)
 - 본프로젝트는 스카우터 서버 플로그인으로써 XLOG 정보에서 Service 와 SQL 정보만 추출 하여 히스토리 형태의 파일 형태로 남기는 플러그인 이다.  
-     
+   
 
 ### configuration (스카우터 서버 설치 경로 하위의 conf/scouter.conf)
 #### 기본 설정
